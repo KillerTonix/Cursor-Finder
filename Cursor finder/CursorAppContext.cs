@@ -16,6 +16,9 @@ namespace Cursor_finder
         private readonly List<DarkenerForm> _darkeners = new List<DarkenerForm>(); // Active darkener forms
         private DateTime _lastPress = DateTime.MinValue; // Last Ctrl key press time
         private bool _isAnimating = false; // Animation state flag
+        private const int WM_KEYDOWN = 0x0100; // Key down message
+        private const int WM_KEYUP = 0x0101;  // Key up message
+        private bool _isControlDown = false; // Track if the key is currently physically held
 
         public CursorAppContext()
         {
@@ -43,19 +46,48 @@ namespace Cursor_finder
         // Keyboard hook callback method 
         private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
-            if (nCode >= 0 && wParam == (IntPtr)0x0100) // WM_KEYDOWN
+            if (nCode >= 0) // Process the key event
             {
-                int vkCode = Marshal.ReadInt32(lParam);
-                if (vkCode == 162 || vkCode == 163) // Left or Right Ctrl
+                int vkCode = Marshal.ReadInt32(lParam); // Get the virtual key code
+                bool isCtrlKey = (vkCode == 162 || vkCode == 163); // VK_LCONTROL = 162, VK_RCONTROL = 163
+
+                if (wParam == (IntPtr)WM_KEYDOWN || wParam == (IntPtr)0x0104) // WM_KEYDOWN or WM_SYSKEYDOWN
                 {
-                    if ((DateTime.Now - _lastPress).TotalMilliseconds < 400) // Double press detected and within 400ms
+                    if (isCtrlKey)
                     {
-                        TriggerEffect(Cursor.Position); // Trigger the effect at current cursor position
+                        if (!_isControlDown)
+                        {
+                            _isControlDown = true;
+
+                            double elapsed = (DateTime.Now - _lastPress).TotalMilliseconds; // Time since last Ctrl press
+
+                            if (elapsed < 400 && elapsed > 50)  // Trigger only if it's the second tap and no other keys interfered
+                            {
+                                TriggerEffect(Cursor.Position); // Trigger the cursor finding effect                                
+                                _lastPress = DateTime.MinValue; // Reset after trigger so a third tap doesn't trigger it again immediately
+                            }
+                            else
+                            {
+                                _lastPress = DateTime.Now;
+                            }
+                        }
                     }
-                    _lastPress = DateTime.Now; // Update last press time
+                    else
+                    {
+                        // A non-control key was pressed (e.g., Ctrl+C). 
+                        // Reset the timer so the next Ctrl tap is treated as the "first" one.
+                        _lastPress = DateTime.MinValue;
+                    }
+                }
+                else if (wParam == (IntPtr)WM_KEYUP || wParam == (IntPtr)0x0105) // WM_KEYUP or WM_SYSKEYUP
+                {
+                    if (isCtrlKey)
+                    {
+                        _isControlDown = false;
+                    }
                 }
             }
-            return CallNextHookEx(_hookID, nCode, wParam, lParam); // Call next hook
+            return CallNextHookEx(_hookID, nCode, wParam, lParam);
         }
 
         // Set the keyboard hook method
