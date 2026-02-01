@@ -32,7 +32,7 @@ namespace Cursor_finder
                 new MenuItem("Exit", Exit)
             }),
                 Visible = true,
-                Text = "Cursor Finder v1.0\nDouble-Ctrl to find cursor"
+                Text = "Cursor Finder v1.1\nDouble-Ctrl to find cursor"
             };
 
             Application.ApplicationExit += (s, e) =>

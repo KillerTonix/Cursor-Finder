@@ -21,7 +21,7 @@ namespace Cursor_finder
             this.BackColor = Color.Black; // Background color
             this.TransparencyKey = Color.Black; // Make black color transparent
             this.Opacity = 0.7; // Set overall opacity
-            this.Text = "Cursor Finder v1.0";
+            this.Text = "Cursor Finder v1.1";
 
             animationTimer.Interval = 15;
             animationTimer.Tick += (s, e) =>
